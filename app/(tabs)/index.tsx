@@ -1,98 +1,161 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// // //file: app/(tabs)/index.tsx
+/**
+ * Data Structures for project whole functionality of the app
+ *here step changed like this way
+ * intially project name will display   consider as project id page with title name will display in  index page
+ *  after clicking on index page project name it will navigate to project id page
+ * there project  sub checks  will display like  checks [] array items  
+ * for each check user will upload photos user will  review the each photo and submit the project 
+ *      inside the each quality check like   photo with two options  1. fail(design failed)  2. pass(design passed)
+ * after submitting the project  project will be marked as completed true ( after clicking on submit button a form will open ask for  enter email id and name    after entering  project status will go to mail  to the entered email id )
+ * after completing the project  it will display in completed project page
+ */ 
+import Hero from "@/components/hero";
+import colors from "@/constants/Colors";
+import { projects } from "@/constants/projects";
+import { useAuth } from "@/hooks/useAuth";
+import { AntDesign } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { useRouter } from "expo-router";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  // ✅ Fixed: Use 'user' instead of 'userToken'
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  // ✅ This loading check might not be necessary since _layout.tsx handles it
+  // But keeping it for safety in case this screen loads before auth resolves
+  if (loading) {
+    return (
+      <View style={{ 
+        flex: 1, 
+        justifyContent: "center", 
+        alignItems: "center",
+        backgroundColor: '#fff' 
+      }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text style={{ marginTop: 10, fontFamily: "BeVietnamPro-Medium", }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // ✅ Optional: Handle case where user somehow gets here without being authenticated
+  if (!user) {
+    return (
+      
+      <View style={{ 
+        flex: 1, 
+        justifyContent: "center", 
+        alignItems: "center",
+        backgroundColor: '#e7e7e7ff' 
+      }}>
+               <Pressable onPress={() => router.push("/auth")}>
+        <BlurView intensity={80} tint="light" style={styles.blurBox}>
+          <Text style={styles.text}>Please log in to continue</Text>
+        </BlurView>
+      </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      <Hero />
+
+
+      
+
+      <View style={styles.container}>
+        <FlatList
+          data={projects}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            return (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/project/[id]",
+                    params: { id: item.id },
+                  })
+                }
+                style={styles.card}
+              >
+                <View style={styles.cardContent}>
+                  <Text style={styles.title}>{item.title}</Text>
+                  <AntDesign name="right" size={20} color={colors.bgFourth} />
+                </View>
+              </Pressable>
+            );
+          }}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+    padding: 16,
+    paddingBottom: 0,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 10,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  welcomeText: {
+    fontSize: 16,
+    fontFamily: "BeVietnamPro-Bold",
+    color: colors.text,
+  },
+  logoutBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: "red",
+    borderRadius: 8,
+  },
+  logoutText: {
+    color: "white",
+    fontFamily: "BeVietnamPro-Bold",
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    shadowColor: "#000",
+    marginBottom: 12,
+    borderRadius: 22,
+  },
+  cardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  title: {
+    fontSize: 15,
+    fontFamily: "BeVietnamPro-Bold",
+    color: colors.bgFourth,
+  },
+  blurBox: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  text: {
+    fontSize: 18,
+    color: "#000",
+    fontFamily: "BeVietnamPro-Medium",
   },
 });
