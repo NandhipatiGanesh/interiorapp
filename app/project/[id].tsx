@@ -383,7 +383,7 @@ export default function ProjectDetail() {
             <Text style={styles.uploadText}>Submit</Text>
           </Pressable>
           <Pressable style={styles. CancelButton} onPress={() => setShowDrawer(false)}>
-            <Text style={styles.uploadText}>Cancel</Text>
+            <Text style={styles.cancelText}>Cancel</Text>
           </Pressable>
         </View>
       </Modal>
@@ -438,8 +438,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   uploadText: {
-    color: "#fff",
+    color: "#ffffffff",
     marginLeft: 8,
+    fontSize: 14,
+    fontFamily: "BeVietnamPro-Medium",
+  },
+  cancelText: {
+    color: "#000000e6",
     fontSize: 14,
     fontFamily: "BeVietnamPro-Medium",
   },
@@ -470,7 +475,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
-    backgroundColor: "#000000e6",
+    borderColor: "#000000e6",
+    borderWidth: 1,
     borderRadius: 160,
     alignSelf: "flex-start",
     width: "100%",
