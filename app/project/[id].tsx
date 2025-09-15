@@ -1,55 +1,76 @@
-//file: app/project/[id].tsx
+
+// file: app/project/[id].tsx
 /**
- * Data Structures for project whole functionality of the app
- *here step changed like this way
- * intially project name will display   consider as project id page with title name will display in  index page
- *  after clicking on index page project name it will navigate to project id page
- * there project  sub checks  will display like  checks [] array items  
- * for each check user will upload photos user will  review the each photo and submit the project 
- *      inside the each quality check like   photo with two options  1. fail(design failed)  2. pass(design passed)
- * after submitting the project  project will be marked as completed true ( after clicking on submit button a form will open ask for  enter email id and name    after entering  project status will go to mail  to the entered email id )
- * after completing the project  it will display in completed project page
- */ 
-// file: app/project/[id].tsx
-// file: app/project/[id].tsx
+ * Project Detail Screen
+ * Flow:
+ * - User selects a project
+ * - Project has multiple checks (sub tasks)
+ * - Each check can have photos
+ * - User uploads photo(s) for each check
+ * - Each photo can be marked pass/fail
+ * - Status is stored in Firestore (no WordPress dependency)
+ *  - also i need like  if an all checks are completed i mean photos added for all checks then only show project as completed
+ * - a button will show like mark as completed if all checks are done
+ * - then after clicking on  completed button  need to send mail( using resend mailer) to the admin with a form  just name and email and project name
+ * -  details  will be sent to the  client mail from the form 
+ * - user can see the  completed project in the completed section ( it is in  ((tabs))/completed.tsx file) 
+ * - so the current user  completed projects need to be shown in the completed section  so we need store the process  in the firestore   to use where we want
+ * 
+ * Note: This is a simplified example. In a real app, you'd handle errors,
+ * loading states, and possibly use Firebase Storage for images.
+ */
 import { Check, projects } from "@/constants/projects";
+import { app } from "@/firebaseConfig";
 import { useAuth } from "@/hooks/useAuth";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator } from "react-native";
-
 import {
+  addDoc,
+  collection,
+  getDocs,
+  getFirestore,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Image,
   LayoutAnimation,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   UIManager,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Enable animation on Android
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   // @ts-ignore
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+const db = getFirestore(app);
+const functions = getFunctions(app);
+
 type PhotoReview = {
-  id?: number; // WP attachment ID
+  id?: string;
   url: string;
   status: "pass" | "fail" | null;
 };
 
-declare module "expo-file-system" {
-  export const cacheDirectory: string;
-}
 export default function ProjectDetail() {
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -58,18 +79,16 @@ export default function ProjectDetail() {
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [uploadingCheckId, setUploadingCheckId] = useState<string | null>(null);
+  const [checks, setChecks] = useState<Check[]>([]);
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
 
-  const [checks, setChecks] = useState<Check[]>(() => {
-    if (!project) return [];
-    return project.checks.map((c) => ({
-      ...c,
-      photos: (c.photos as any[] | undefined)?.map((p) =>
-        typeof p === "string"
-          ? { url: p, status: null }
-          : { id: p?.id, url: String(p?.url ?? ""), status: p?.status ?? null }
-      ) ?? [],
-    }));
-  });
+  useEffect(() => {
+    if (!project) return;
+    setChecks(project.checks.map((c) => ({ ...c, photos: [] })));
+    fetchReviews();
+  }, []);
 
   if (!project) {
     return (
@@ -80,99 +99,33 @@ export default function ProjectDetail() {
   }
 
   // -----------------------------
-  // Fetch images from WP Media
-  // -----------------------------
-  const fetchImages = async () => {
-    try {
-      const response = await fetch("https://elementortemplates.in/wp-json/wp/v2/media");
-      const media = await response.json();
-
-      const projectImages =
-        (media || [])
-          .filter(
-            (m: any) =>
-              m &&
-              m.media_type === "image" &&
-              m.source_url &&
-              m.title?.rendered?.startsWith(project.id)
-          )
-          .map((m: any) => ({
-            id: m.id,
-            url: String(m.source_url),
-            title: String(m.title.rendered),
-          })) ?? [];
-
-      const updatedChecks = project.checks.map((check) => {
-        const checkImages = projectImages
-          .filter((img: any) => img.title.includes(check.id))
-          .map((img : any) => ({ id: img.id, url: img.url, status: null }));
-
-        const existingPhotos =
-          (check.photos as any[] | undefined)?.map((p) =>
-            typeof p === "string"
-              ? { url: p, status: null }
-              : { id: p?.id, url: String(p?.url ?? ""), status: p?.status ?? null }
-          ) ?? [];
-
-        const mergedUrls = [
-          ...existingPhotos.map((p) => p.url),
-          ...checkImages.map((p: any) => p.url).filter((u: any) => !existingPhotos.some((ep) => ep.url === u)),
-        ];
-
-        const mergedPhotos: PhotoReview[] = mergedUrls.map((u) => {
-          const match = [...existingPhotos, ...checkImages].find((p) => p.url === u);
-          return { id: match?.id, url: u, status: match?.status ?? null };
-        });
-
-        return {
-          ...check,
-          photos: mergedPhotos,
-          completed: mergedPhotos.length > 0,
-        };
-      });
-
-      setChecks(updatedChecks);
-    } catch (err) {
-      console.error("Fetch images error:", err);
-    }
-  };
-
-  // -----------------------------
-  // Fetch review statuses from DB
+  // Fetch reviews from Firestore
   // -----------------------------
   const fetchReviews = async () => {
-    try {
-      const response = await fetch(
-        `https://elementortemplates.in/wp-json/custom-api/v1/reviews?project_id=${project.id}`
-      );
-      const data = await response.json();
+    const q = query(
+      collection(db, "reviews"),
+      where("projectId", "==", project.id)
+    );
+    const snap = await getDocs(q);
+    const reviews = snap.docs.map((doc) => doc.data());
 
-      if (Array.isArray(data)) {
-        setChecks((prev) =>
-          prev.map((check) => ({
-            ...check,
-            photos: check.photos.map((p: PhotoReview) => {
-              const dbReview = data.find(
-                (r: any) => r.image_url === p.url && r.check_id === check.id
-              );
-              return dbReview
-                ? {
-                    ...p,
-                    id: Number(dbReview.image_id) || p.id,
-                    status: dbReview.status as "pass" | "fail",
-                  }
-                : p;
-            }),
-          }))
-        );
-      }
-    } catch (err) {
-      console.error("Fetch reviews error:", err);
-    }
+    setChecks((prev) =>
+      prev.map((check) => ({
+        ...check,
+        photos: reviews
+          .filter((r: any) => r.checkId === check.id)
+          .map((r: any) => ({
+            id: r.id,
+            url: r.localUri,
+            status: r.status,
+          })),
+        completed: reviews.some((r: any) => r.checkId === check.id),
+      }))
+    );
   };
 
   // -----------------------------
-  // Save pass/fail to DB
+  // Update status
   // -----------------------------
   const updatePhotoStatus = async (
     checkId: string,
@@ -184,7 +137,7 @@ export default function ProjectDetail() {
         check.id === checkId
           ? {
               ...check,
-              photos: check.photos.map((photo: PhotoReview) =>
+              photos: check.photos.map((photo) =>
                 photo.url === photoUrl ? { ...photo, status } : photo
               ),
             }
@@ -192,100 +145,100 @@ export default function ProjectDetail() {
       )
     );
 
-    try {
-      const check = checks.find((c) => c.id === checkId);
-      if (!check) return;
+    const q = query(
+      collection(db, "reviews"),
+      where("projectId", "==", project.id),
+      where("checkId", "==", checkId),
+      where("localUri", "==", photoUrl)
+    );
 
-      const photo = check.photos.find((p: PhotoReview) => p.url === photoUrl);
-
-      await fetch("https://elementortemplates.in/wp-json/custom-api/v1/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          project_id: project.id,
-          check_id: check.id,
-          check_label: check.label,
-          image_id: photo?.id ?? 0,
-          image_url: photoUrl,
-          status,
-        }),
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      await updateDoc(snap.docs[0].ref, { status });
+    } else {
+      await addDoc(collection(db, "reviews"), {
+        projectId: project.id,
+        checkId,
+        localUri: photoUrl,
+        status,
+        createdAt: new Date(),
       });
-    } catch (err) {
-      console.error("Save review error:", err);
     }
   };
 
   // -----------------------------
-  // Upload image
+  // Upload photo
   // -----------------------------
   const uploadImage = async (checkId: string) => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission required", "Media library permission is needed to upload images.");
-        return;
-      }
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
         quality: 0.7,
       });
-
       if (result.canceled) return;
       const asset = result.assets[0];
-      let fileUri = asset.uri;
 
       setUploadingCheckId(checkId);
+      await addDoc(collection(db, "reviews"), {
+        projectId: project.id,
+        checkId,
+        localUri: asset.uri,
+        status: null,
+        createdAt: new Date(),
+      });
 
-      if (fileUri.startsWith("ph://")) {
-        const newUri = FileSystem.cacheDirectory + `${Date.now()}.jpg`;
-        await FileSystem.copyAsync({ from: fileUri, to: newUri });
-        fileUri = newUri;
-      }
-
-      const formData = new FormData();
-      formData.append("file", {
-        uri: fileUri,
-        name: `${project.id}_${checkId}_${Date.now()}.jpg`,
-        type: "image/jpeg",
-      } as any);
-
-      const response = await fetch(
-        "https://elementortemplates.in/wp-json/custom-api/v1/upload",
-        { method: "POST", body: formData }
+      setChecks((prev) =>
+        prev.map((check) =>
+          check.id === checkId
+            ? {
+                ...check,
+                completed: true,
+                photos: [...check.photos, { url: asset.uri, status: null }],
+              }
+            : check
+        )
       );
-
-      const data = await response.json();
-
-      if (data?.url) {
-        setChecks((prev) =>
-          prev.map((check) =>
-            check.id === checkId
-              ? {
-                  ...check,
-                  completed: true,
-                  photos: [
-                    ...check.photos,
-                    {
-                      id: data.id,
-                      url: String(data.url),
-                      status: null,
-                    }
-                    
-                
-                  ],
-                }
-              : check
-          )
-        );
-      }
-
       setUploadingCheckId(null);
-      Alert.alert("Upload successful");
     } catch (err: any) {
       setUploadingCheckId(null);
-      Alert.alert("Upload Error", err?.message ?? "Something went wrong");
+      Alert.alert("Error", err?.message ?? "Something went wrong");
+    }
+  };
+
+  // -----------------------------
+  // Mark Project as Completed
+  // -----------------------------
+  const handleCompleteProject = async () => {
+    if (!formName || !formEmail) {
+      Alert.alert("Error", "Please fill in name and email");
+      return;
+    }
+
+    try {
+      // Save to Firestore
+      await addDoc(collection(db, "completedProjects"), {
+        projectId: project.id,
+        projectName: project.title,
+        userId: user?.uid ?? "guest",
+        name: formName,
+        email: formEmail,
+        completedAt: new Date(),
+      });
+
+      // Trigger Resend via Firebase Function
+      const sendEmail = httpsCallable(functions, "sendCompletionEmail");
+      await sendEmail({
+        name: formName,
+        email: formEmail,
+        projectName: project.title,
+      });
+
+      setShowDrawer(false);
+      Alert.alert("Success", "Project marked as completed and email sent");
+      router.push("/(tabs)/completed");
+    } catch (err: any) {
+      Alert.alert("Error", err?.message ?? "Failed to complete project");
     }
   };
 
@@ -297,28 +250,14 @@ export default function ProjectDetail() {
     setExpandedId(expandedId === checkId ? null : checkId);
   };
 
-  // -----------------------------
-  // Initial load
-  // -----------------------------
-  useEffect(() => {
-    const load = async () => {
-      await fetchImages();
-      await fetchReviews();
-    };
-    load();
-  }, []);
+  const allChecksCompleted = checks.every((c) => c.photos.length > 0);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* header */}
       <View style={styles.header}>
         <Pressable
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.push("/"); // 👈 fallback if no history
-            }
-          }}
+          onPress={() => (router.canGoBack() ? router.back() : router.push("/"))}
           style={{ marginRight: 12 }}
         >
           <Feather name="arrow-left" size={24} color="black" />
@@ -326,11 +265,13 @@ export default function ProjectDetail() {
         <Text style={styles.headerTitle}>{project.title}</Text>
       </View>
 
+      {/* description */}
       <Text style={styles.description}>{project.description}</Text>
-      <Text style={styles.subTitle}>Progress:</Text>
 
+      {/* checks */}
       <FlatList
         data={checks}
+        extraData={checks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
           const isExpanded = expandedId === item.id;
@@ -354,18 +295,12 @@ export default function ProjectDetail() {
               </Pressable>
 
               {isExpanded && (
-                <View style={styles.accordionContent}>
+                <View>
                   {item.photos.length === 0 ? (
                     uploadingCheckId === item.id ? (
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <ActivityIndicator size="small" color="#007AFF" />
-                        <Text style={{ marginLeft: 6 }}>Uploading...</Text>
-                      </View>
+                      <ActivityIndicator size="small" color="#007AFF" />
                     ) : (
-                      <Pressable
-                        style={styles.uploadButton}
-                        onPress={() => uploadImage(item.id)}
-                      >
+                      <Pressable style={styles.uploadButton} onPress={() => uploadImage(item.id)}>
                         <Text style={styles.uploadText}>Upload Photos</Text>
                       </Pressable>
                     )
@@ -375,47 +310,35 @@ export default function ProjectDetail() {
                         <View key={`${item.id}-${idx}`} style={{ margin: 4 }}>
                           <Image
                             source={{ uri: photo.url }}
-                            style={{ width: 40, height: 40, borderRadius: 6 }}
+                            style={{ width: 40, height: 40 }}
                           />
-
                           <View style={{ flexDirection: "row", marginTop: 4 }}>
-                            <Pressable
-                              style={{
-                                padding: 4,
-                                backgroundColor: photo.status === "pass" ? "green" : "#ddd",
-                                borderRadius: 4,
-                                marginRight: 4,
-                              }}
-                              onPress={() => updatePhotoStatus(item.id, photo.url, "pass")}
-                            >
-                              <MaterialIcons name="check" size={10} color="#fff" />
-                            </Pressable>
-                            <Pressable
-                              style={{
-                                padding: 4,
-                                backgroundColor: photo.status === "fail" ? "red" : "#ddd",
-                                borderRadius: 4,
-                              }}
-                              onPress={() => updatePhotoStatus(item.id, photo.url, "fail")}
-                            >
-                              <MaterialIcons name="close" size={10} color="#fff" />
-                            </Pressable>
-                          </View>
+                           <Pressable
+                             style={{
+                               padding: 4,
+                               backgroundColor: photo.status === "pass" ? "green" : "#ddd",
+                               borderRadius: 4,
+                               marginRight: 4,
+                             }}
+                             onPress={() => updatePhotoStatus(item.id, photo.url, "pass")}
+                           >
+                             <MaterialIcons name="check" size={12} color="#fff" />
+                           </Pressable>
+                           <Pressable
+                             style={{
+                               padding: 4,
+                               backgroundColor: photo.status === "fail" ? "red" : "#ddd",
+                               borderRadius: 4,
+                             }}
+                             onPress={() => updatePhotoStatus(item.id, photo.url, "fail")}
+                           >
+                             <MaterialIcons name="close" size={12} color="#fff" />
+                           </Pressable>
+                         </View>
+
                         </View>
                       ))}
-
-                      <Pressable
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderWidth: 1,
-                          borderColor: "#007AFF",
-                          borderRadius: 6,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                        onPress={() => uploadImage(item.id)}
-                      >
+                      <Pressable style={styles.uploadPlus} onPress={() => uploadImage(item.id)}>
                         <Feather name="plus" size={20} color="#007AFF" />
                       </Pressable>
                     </View>
@@ -425,137 +348,158 @@ export default function ProjectDetail() {
             </View>
           );
         }}
-        contentContainerStyle={{ paddingBottom: 40 }}
       />
-      <View>
-       <Text>
-         {user
-           ? user.displayName || user.email?.split("@")[0] || "User"
-           : "Guest"}
-       </Text>
-     </View>
+
+      {/* Complete project button */}
+      {allChecksCompleted && (
+        <Pressable style={styles.uploadButton} onPress={() => setShowDrawer(true)}>
+          <Text style={styles.uploadText}>Mark as Completed</Text>
+        </Pressable>
+      )}
+
+      {/* Bottom drawer form */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={showDrawer}
+        onRequestClose={() => setShowDrawer(false)}
+        style={styles.Modeldrawer}
+      >
+        <View style={styles.drawer}>
+          <Text style={styles.completText}>Complete Project</Text>
+          <TextInput
+           style={styles.input} 
+            placeholder="Name"
+            value={formName}
+            onChangeText={setFormName}
+          />
+          <TextInput
+          style={styles.input}  
+            placeholder="Email"
+            value={formEmail}
+            onChangeText={setFormEmail}
+          />
+          <Pressable style={styles. uploadButton} onPress={handleCompleteProject}>
+            <Text style={styles.uploadText}>Submit</Text>
+          </Pressable>
+          <Pressable style={styles. CancelButton} onPress={() => setShowDrawer(false)}>
+            <Text style={styles.uploadText}>Cancel</Text>
+          </Pressable>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
-
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
-  },
+  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 22,
     paddingBottom: 6,
   },
-  backButton: {
-    padding: 6,
-    marginRight: 12,
-  },
   headerTitle: {
     fontSize: 18,
     fontWeight: "500",
-    fontFamily: 'BeVietnamPro-Medium',
+    fontFamily: "BeVietnamPro-Medium",
   },
   description: {
     marginBottom: 8,
     color: "#000000ff",
-    fontFamily: 'BeVietnamPro-Medium',
+    fontFamily: "BeVietnamPro-Medium",
   },
   subTitle: {
     fontSize: 14,
     marginTop: 8,
     marginBottom: 8,
-    fontFamily: 'BeVietnamPro-Medium',
+    fontFamily: "BeVietnamPro-Medium",
   },
   checkCard: {
     backgroundColor: "#fff",
     borderColor: "#f7f7f7",
     borderWidth: 2,
-     shadowColor: "#000",
+    shadowColor: "#000",
     padding: 12,
     marginBottom: 10,
-    borderRadius:22,
+    borderRadius: 22,
   },
-  checkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 4,
-  },
-  checkItem: {
-    marginLeft: 10,
-    fontSize: 15,
-     fontFamily: 'BeVietnamPro-Medium',
-  },
-  accordionContent: {
-    marginTop: 12,
-  },
+  checkRow: { flexDirection: "row", alignItems: "center", paddingVertical: 4 },
+  checkItem: { marginLeft: 10, fontSize: 15, fontFamily: "BeVietnamPro-Medium" },
+  accordionContent: { marginTop: 12 },
   uploadButton: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
+    padding: 12,
     backgroundColor: "#0d00ffe6",
     borderRadius: 160,
     alignSelf: "flex-start",
-    fontFamily: 'BeVietnamPro-Medium',
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
+    width: "100%",
+    justifyContent: "center",
     marginTop: 10,
-
   },
   uploadText: {
     color: "#fff",
     marginLeft: 8,
-    fontSize: 14, 
-    fontFamily: 'BeVietnamPro-Medium',
+    fontSize: 14,
+    fontFamily: "BeVietnamPro-Medium",
   },
-  photoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "nowrap",
+  drawer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#f7f7f7",
+    padding: 20,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+     transitionProperty: "transform",
+  transitionDuration: "300ms",
+  transitionTimingFunction: "ease-in-out",
   },
-  photoContainer: {
-    width: 120,
-    marginRight: 12,
-  },
-  photoThumb: {
-    width: 120,
-    height: 80,
+  uploadPlus: {
+    width: 40,
+    height: 40, 
     borderRadius: 8,
-    backgroundColor: "#ddd",
-  },
-  actionsRow: {
-    flexDirection: "row",
-    marginTop: 8,
-  },
-  actionButton: {
-    padding: 6,
-    marginRight: 8,
-    borderRadius: 6,
-    backgroundColor: "#888",
-    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#007AFF", 
     alignItems: "center",
-  },
-  actionText: {
-    color: "#fff",
-    marginLeft: 6,
-  },
-  passSelected: {
-    backgroundColor: "green",
-  },
-  failSelected: {
-    backgroundColor: "red",
-  },
-  addMore: {
     justifyContent: "center",
+    margin: 4,
+  },
+  CancelButton: {
+    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e6f0ff",
+    padding: 12,
+    backgroundColor: "#000000e6",
+    borderRadius: 160,
+    alignSelf: "flex-start",
+    width: "100%",
+    justifyContent: "center",
+    marginTop: 10,
   },
-  error: {
-    color: "red",
+  
+   input: {
+    borderWidth: 2,
+    borderColor: "#ffffffff",
+    height: 50,
+    paddingLeft: 15,
+    marginBottom: 15,
+    borderRadius: 18,
+    fontSize: 14,
+    width: "100%",
+    fontFamily: "BeVietnamPro-Regular",
   },
+  Modeldrawer: {
+    backgroundColor  :'#f7f7f7',
+    flex:1,
+    justifyContent:'flex-end',
+    alignItems:'center',
+    width: '100%',
+    height: '100%',
+    padding:10,
+    borderTopEndRadius:20,
+    borderTopStartRadius:20,
+    borderTopColor:'#00000020', borderTopWidth:2
+  },
+  completText : { fontSize: 18, fontWeight: "500", marginBottom: 22, fontFamily: "BeVietnamPro-Medium" },
 });

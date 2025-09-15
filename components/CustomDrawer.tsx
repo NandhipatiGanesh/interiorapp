@@ -99,6 +99,8 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     flexDirection: "row",
     zIndex: 1000,
+    width: '100%',
+    height: '100%',
   },
   backdrop: {
     flex: 1,
