@@ -34,7 +34,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { getFunctions } from "firebase/functions";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -65,6 +65,12 @@ if (
 const db = getFirestore(app);
 const functions = getFunctions(app);
 
+// API endpoints
+const WP_UPLOAD_URL = "https://elementortemplates.in/wp-json/myapp/v1/upload-image";
+const WP_COMPLETE_URL = "https://elementortemplates.in/wp-json/myapp/v1/complete-project";
+const WP_FETCH_IMAGES_URL = "https://elementortemplates.in/wp-json/myapp/v1/project-images";
+const VERCEL_MAIL_API = "https://sendemailapi-seven.vercel.app/api/send-completion-email";
+
 type PhotoReview = {
   id?: string;
   url: string;
@@ -78,17 +84,19 @@ export default function ProjectDetail() {
   const project = projects.find((p) => p.id === id);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [uploadingCheckId, setUploadingCheckId] = useState<string | null>(null);
   const [checks, setChecks] = useState<Check[]>([]);
   const [showDrawer, setShowDrawer] = useState(false);
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [uploadingCheckId, setUploadingCheckId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!project) return;
     setChecks(project.checks.map((c) => ({ ...c, photos: [] })));
     fetchReviews();
-  }, []);
+    checkIfCompleted();
+  }, [project?.id, user?.uid]);
 
   if (!project) {
     return (
@@ -99,33 +107,33 @@ export default function ProjectDetail() {
   }
 
   // -----------------------------
-  // Fetch reviews from Firestore
+  // Fetch reviews from WP
   // -----------------------------
   const fetchReviews = async () => {
-    const q = query(
-      collection(db, "reviews"),
-      where("projectId", "==", project.id)
-    );
-    const snap = await getDocs(q);
-    const reviews = snap.docs.map((doc) => doc.data());
+    try {
+      const response = await fetch(`${WP_FETCH_IMAGES_URL}/${project.id}`);
+      const reviews = await response.json();
 
-    setChecks((prev) =>
-      prev.map((check) => ({
-        ...check,
-        photos: reviews
-          .filter((r: any) => r.checkId === check.id)
-          .map((r: any) => ({
-            id: r.id,
-            url: r.localUri,
-            status: r.status,
-          })),
-        completed: reviews.some((r: any) => r.checkId === check.id),
-      }))
-    );
+      setChecks((prev) =>
+        prev.map((check) => ({
+          ...check,
+          photos: reviews
+            .filter((r: any) => r.check_id === check.id)
+            .map((r: any) => ({
+              id: r.id,
+              url: r.image_url,
+              status: r.status,
+            })),
+          completed: reviews.some((r: any) => r.check_id === check.id),
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching images:", err);
+    }
   };
 
   // -----------------------------
-  // Update status
+  // Update status (Firestore only)
   // -----------------------------
   const updatePhotoStatus = async (
     checkId: string,
@@ -167,19 +175,54 @@ export default function ProjectDetail() {
   };
 
   // -----------------------------
-  // Upload photo
+  // Upload photo (WP + Firestore)
   // -----------------------------
+  async function uriToBlob(uri: string): Promise<Blob> {
+    const response = await fetch(uri);
+    return await response.blob();
+  }
+
   const uploadImage = async (checkId: string) => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
         quality: 0.7,
       });
+
       if (result.canceled) return;
       const asset = result.assets[0];
+      const formData = new FormData();
 
-      setUploadingCheckId(checkId);
+      if (Platform.OS === "web") {
+        const blob = await uriToBlob(asset.uri);
+        formData.append("image", blob, "upload.jpg");
+      } else {
+        formData.append("image", {
+          uri: asset.uri,
+          type: "image/jpeg",
+          name: "upload.jpg",
+        } as any);
+      }
+
+      formData.append("user_id", user?.uid ?? "guest");
+      formData.append("project_id", project.id);
+      formData.append("check_id", checkId);
+      formData.append("status", "pending");
+
+      const response = await fetch(WP_UPLOAD_URL, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log("Upload result:", data);
+
+      if (!data.success) {
+        Alert.alert("Upload failed", data.error || "Unknown error");
+        return;
+      }
+
+      // Save also in Firestore
       await addDoc(collection(db, "reviews"), {
         projectId: project.id,
         checkId,
@@ -188,62 +231,88 @@ export default function ProjectDetail() {
         createdAt: new Date(),
       });
 
+      // Update local UI
       setChecks((prev) =>
-        prev.map((check) =>
-          check.id === checkId
+        prev.map((c) =>
+          c.id === checkId
             ? {
-                ...check,
+                ...c,
                 completed: true,
-                photos: [...check.photos, { url: asset.uri, status: null }],
+                photos: [...c.photos, { url: data.image_url, status: null }],
               }
-            : check
+            : c
         )
       );
-      setUploadingCheckId(null);
     } catch (err: any) {
-      setUploadingCheckId(null);
-      Alert.alert("Error", err?.message ?? "Something went wrong");
+      Alert.alert("Error", err.message || "Upload failed");
     }
   };
 
   // -----------------------------
-  // Mark Project as Completed
+  // Mark Project as Completed (WP + Firestore + Email)
   // -----------------------------
   const handleCompleteProject = async () => {
-    if (!formName || !formEmail) {
-      Alert.alert("Error", "Please fill in name and email");
-      return;
-    }
+  if (!formName || !formEmail) {
+    Alert.alert("Error", "Please fill in name and email");
+    return;
+  }
 
-    try {
-      // Save to Firestore
-      await addDoc(collection(db, "completedProjects"), {
-        projectId: project.id,
-        projectName: project.title,
-        userId: user?.uid ?? "guest",
+  try {
+    // 1. Save in Firestore
+    await addDoc(collection(db, "completedProjects"), {
+      projectId: project.id,
+      projectName: project.title,
+      userId: user?.uid ?? "guest",
+      name: formName,
+      email: formEmail,
+      completedAt: new Date(),
+    });
+
+    // 2. Save in WordPress
+    const wpRes = await fetch(WP_COMPLETE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: user?.uid ?? "guest",
+        project_id: project.id,
+        project_name: project.title,
         name: formName,
         email: formEmail,
-        completedAt: new Date(),
-      });
+        completed_at: new Date().toISOString(),
+      }),
+    });
 
-      // Trigger Resend via Firebase Function
-      const sendEmail = httpsCallable(functions, "sendCompletionEmail");
-      await sendEmail({
+    const wpData = await wpRes.json();
+    console.log("WP Complete Response:", wpData);
+
+    if (!wpData.success) {
+      Alert.alert("Warning", "Saved in Firestore but failed in WordPress");
+    }
+
+    // 3. Send email (Vercel API)
+    await fetch("https://sendemailapi-seven.vercel.app/api/send-completion-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         name: formName,
         email: formEmail,
         projectName: project.title,
-      });
+      }),
+    });
 
-      setShowDrawer(false);
-      Alert.alert("Success", "Project marked as completed and email sent");
-      router.push("/(tabs)/completed");
-    } catch (err: any) {
-      Alert.alert("Error", err?.message ?? "Failed to complete project");
-    }
-  };
+    // 4. Update UI
+    setIsCompleted(true);
+    setShowDrawer(false);
+    Alert.alert("Success", "Project marked as completed");
+    router.push("/(tabs)/completed");
+  } catch (err: any) {
+    Alert.alert("Error", err.message || "Failed to complete project");
+  }
+};
+
 
   // -----------------------------
-  // Accordion toggle
+  // Helpers
   // -----------------------------
   const toggleAccordion = (checkId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -251,6 +320,22 @@ export default function ProjectDetail() {
   };
 
   const allChecksCompleted = checks.every((c) => c.photos.length > 0);
+
+  const checkIfCompleted = async () => {
+    if (!project) return;
+    const uid = user?.uid ?? "guest";
+    try {
+      const q = query(
+        collection(db, "completedProjects"),
+        where("projectId", "==", project.id),
+        where("userId", "==", uid)
+      );
+      const snap = await getDocs(q);
+      setIsCompleted(!snap.empty);
+    } catch (err) {
+      console.error("Error checking completedProjects:", err);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -352,10 +437,17 @@ export default function ProjectDetail() {
 
       {/* Complete project button */}
       {allChecksCompleted && (
-        <Pressable style={styles.uploadButton} onPress={() => setShowDrawer(true)}>
-          <Text style={styles.uploadText}>Mark as Completed</Text>
-        </Pressable>
-      )}
+  <Pressable
+    style={[styles.uploadButton, isCompleted && styles.completedButton]}
+    disabled={isCompleted}
+    onPress={() => setShowDrawer(true)}
+  >
+    <Text style={[styles.uploadText, isCompleted && styles.completedText]}>
+      {isCompleted ? "Completed" : "Mark as Completed"}
+    </Text>
+  </Pressable>
+)}
+
 
       {/* Bottom drawer form */}
       <Modal
@@ -508,4 +600,10 @@ const styles = StyleSheet.create({
     borderTopColor:'#00000020', borderTopWidth:2
   },
   completText : { fontSize: 18, fontWeight: "500", marginBottom: 22, fontFamily: "BeVietnamPro-Medium" },
+  completedButton: {
+  backgroundColor: "#28a745", // green
+},
+completedText: {
+  color: "#fff",
+}
 });
