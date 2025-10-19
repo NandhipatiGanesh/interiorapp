@@ -18,7 +18,6 @@ import { AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function HomeScreen() {
@@ -62,12 +61,8 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <Hero />
-
-
-      
-
+    <>
+         <Hero />
       <View style={styles.container}>
         <FlatList
           data={projects}
@@ -93,8 +88,8 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         />
-      </View>
-    </SafeAreaView>
+      </View></>
+ 
   );
 }
 
@@ -143,7 +138,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   title: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "BeVietnamPro-Bold",
     color: colors.bgFourth,
   },

@@ -1,16 +1,16 @@
 // File : components/Hero.tsx
 import { useAuth } from "@/hooks/useAuth";
+import { useCustomDrawer } from "@/hooks/useCustomDrawer";
 import { Ionicons } from "@expo/vector-icons";
-import { DrawerActions, useNavigation } from "@react-navigation/native"; // ✅ correct
+import { useNavigation } from "@react-navigation/native"; // ✅ correct
 import { useRouter } from "expo-router";
 import React from "react";
-import { useCustomDrawer } from "@/hooks/useCustomDrawer";
 import {
-    ImageBackground,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const Hero = () => {
@@ -34,7 +34,7 @@ const Hero = () => {
 
   return (
     <ImageBackground
-      source={require("../assets/images/herobanner.png")}
+      source={require("../assets/images/binyaminmellish.jpg")}
       style={styles.container}
       resizeMode="cover"
     >

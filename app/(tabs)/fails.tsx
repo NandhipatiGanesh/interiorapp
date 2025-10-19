@@ -1,3 +1,4 @@
+// app/(tabs)/fails.tsx
 import { useAuth } from "@/hooks/useAuth";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -17,9 +18,10 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export default function CompletedScreen() {
+export default function FailsScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [checks, setChecks] = useState<any[]>([]);
@@ -35,7 +37,8 @@ export default function CompletedScreen() {
       .then((res) => res.json())
       .then((data) => {
         console.log("API response:", JSON.stringify(data, null, 2));
-        setChecks(data || []);
+        // ✅ only keep failed checks
+        setChecks((data || []).filter((c: any) => c.status === "fail"));
         setLoading(false);
       })
       .catch((err) => {
@@ -98,23 +101,13 @@ export default function CompletedScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading completed checks...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.container}> 
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Please log in to view failed checks.</Text>
+          <Text style={styles.loadingText}>Loading failed checks...</Text>
         </View>
       </SafeAreaView>
     );
   } 
-  const passCount = checks.filter((c) => c.status === "pass").length;
-  const failCount = checks.filter((c) => c.status === "fail").length;
-  const totalCount = checks.length;
+
+  const failCount = checks.length;
 
   return (
     <>
@@ -123,51 +116,24 @@ export default function CompletedScreen() {
         
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Completed Checks</Text>
+          <Text style={styles.headerTitle}>Failed Checks</Text>
           <Text style={styles.headerSubtitle}>
-            {totalCount} total check{totalCount !== 1 ? 's' : ''} completed
+            {failCount} failed check{failCount !== 1 ? 's' : ''}
           </Text>
         </View>
 
-        {/* Summary Cards */}
-        <View style={styles.summaryContainer}>
-          <View style={styles.summaryCard}>
-            <View style={[styles.cardContent, styles.passCard]}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconContainer}>
-                  <Feather name="check-circle" size={24} color="#48ff00ff" />
-                </View>
-                <Text style={styles.cardTitle}>Passed</Text>
-              </View>
-              <Text style={styles.cardNumber}>{passCount}</Text>
-            </View>
-          </View>
-
-          <View style={styles.summaryCard}>
-            <View style={[styles.cardContent, styles.failCard]}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconContainer}>
-                  <Feather name="x-circle" size={24} color="#ff5c2aff" />
-                </View>
-                <Text style={styles.cardTitle}>Failed</Text>
-              </View>
-              <Text style={styles.cardNumber}>{failCount}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Checks List */}
+        {/* List */}
         <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <Text style={styles.sectionTitle}>Recent Failures</Text>
           
           {checks.length === 0 ? (
             <View style={styles.emptyState}>
-              <Feather name="clipboard" size={48} color="#C7C7CC" />
-              <Text style={styles.emptyTitle}>No checks completed</Text>
-              <Text style={styles.emptySubtitle}>Your completed checks will appear here</Text>
+              <Feather name="x-circle" size={48} color="#FF3B30" />
+              <Text style={styles.emptyTitle}>No failed checks</Text>
+              <Text style={styles.emptySubtitle}>Your failed checks will appear here</Text>
             </View>
           ) : (
-            checks.map((check, index) => (
+            checks.map((check) => (
               <Pressable
                 key={check.id}
                 style={styles.checkItem}
@@ -176,16 +142,13 @@ export default function CompletedScreen() {
               >
                 <View style={styles.checkContent}>
                   <View style={styles.checkLeft}>
-                    <View style={[
-                      styles.checkStatusIndicator,
-                      check.status === "pass" ? styles.passIndicator : styles.failIndicator
-                    ]} />
+                    <View style={[styles.checkStatusIndicator, styles.failIndicator]} />
                     <View style={styles.checkInfo}>
                       <Text style={styles.checkTitle} numberOfLines={2}>
                         {check.check_name}
                       </Text>
                       <Text style={styles.checkMeta}>
-                        {new Date().toLocaleDateString('en-US', { 
+                        {new Date(check.created_at).toLocaleDateString('en-US', { 
                           month: 'short', 
                           day: 'numeric',
                           hour: '2-digit',
@@ -195,13 +158,8 @@ export default function CompletedScreen() {
                     </View>
                   </View>
                   <View style={styles.checkRight}>
-                    <View style={[
-                      styles.statusBadge,
-                      check.status === "pass" ? styles.passBadge : styles.failBadge
-                    ]}>
-                      <Text style={styles.statusText}>
-                        {check.status === "pass" ? "PASS" : "FAIL"}
-                      </Text>
+                    <View style={[styles.statusBadge, styles.failBadge]}>
+                      <Text style={styles.statusText}>FAIL</Text>
                     </View>
                     <Feather name="chevron-right" size={20} color="#000000ff" />
                   </View>
@@ -211,148 +169,77 @@ export default function CompletedScreen() {
           )}
         </ScrollView>
 
-        {/* Modal */}
+        {/* Modal (same as completed, only fail view is relevant) */}
         {selectedCheck && (
           <>
             <Animated.View
-              style={[
-                styles.backdrop,
-                { opacity: backdropAnim }
-              ]}
+              style={[styles.backdrop, { opacity: backdropAnim }]}
             >
               <Pressable style={styles.backdropTouchable} onPress={handleCloseModal} />
             </Animated.View>
 
             <Animated.View
-              style={[
-                styles.modalContainer,
-                { transform: [{ translateY: slideAnim }] }
-              ]}
+              style={[styles.modalContainer, { transform: [{ translateY: slideAnim }] }]}
             >
               <View style={styles.modalContent}>
-                
-                {/* Modal Handle */}
                 <View style={styles.modalHandle} />
-
-                {/* Close Button */}
                 <Pressable style={styles.closeButton} onPress={handleCloseModal}>
                   <Feather name="x" size={20} color="#8E8E93" />
                 </Pressable>
 
                 <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
-                  
-                  {selectedCheck.status === "pass" ? (
-                   
-                    /* PASS VIEW */
-                     <View style={styles.passView}>
-                       <LinearGradient
-                         colors={['#30D158', '#28CD41']}
-                         start={{ x: 0, y: 0 }}
-                         end={{ x: 1, y: 1 }}
-                         style={styles.passContainer}
-                       >
-                         <View style={styles.passIcon}>
-                           <Feather name="check-circle" size={64} color="#FFFFFF" />
-                         </View>
-                         <Text style={styles.passStatus}>PASSED</Text>
-                         <Text style={styles.passTitle}>{selectedCheck.check_name}</Text>
-                         
-                         <View style={styles.passImageContainer}>
-                           {selectedCheck.image_url ? (
-                             <Image
-                               source={{ uri: selectedCheck.image_url }}
-                               style={{ width: "100%", height: 200, borderRadius: 16 }}
-                               resizeMode="cover"
-                             />
-                           ) : (
-                             <View style={styles.imageBox}>
-                               <Feather name="image" size={32} color="#FFFFFF" opacity={0.8} />
-                               <Text style={styles.imageText}>Evidence Photo</Text>
-                             </View>
-                           )}
-                         </View>
-                       </LinearGradient>
-                     </View>
-                  ) : (
-                    /* FAIL VIEW */
-                     <View style={styles.failView}>
-                         {/* Breadcrumb */}
-                         <View style={styles.breadcrumb}>
-                           <Text style={styles.breadcrumbItem}>Checks</Text>
-                           <Feather name="chevron-right" size={16} color="#8E8E93" />
-                           <Text style={[styles.breadcrumbItem, styles.breadcrumbActive]}>
-                             Failure Details
-                           </Text>
-                         </View>
-                     
-                         {/* Status Header */}
-                         <LinearGradient
-                           colors={['#FF3B30', '#FF2D21']}
-                           start={{ x: 0, y: 0 }}
-                           end={{ x: 1, y: 1 }}
-                           style={styles.failHeader}
-                         >
-                           <Feather name="x-circle" size={32} color="#FFFFFF" />
-                           <Text style={styles.failHeaderText}>FAILED</Text>
-                         </LinearGradient>
-                     
-                         {/* Check Name */}
-                         <Text style={styles.failCheckName}>{selectedCheck.check_name}</Text>
-                     
-                         {/* Details Card */}
-                         {/* Details Card */}
-                         <View style={styles.detailsCard}>
-                           <Text style={styles.detailsTitle}>Failure Details</Text>
-                           {/* Breadcrumb */}
-                           <DetailItem 
-                             label="Path" 
-                             value={selectedCheck.breadcrumb || 'Not specified'} 
-                           />
-                         
-                           {/* Reason */}
-                           <DetailItem 
-                             label="Reason" 
-                             value={selectedCheck.reason || 'Not specified'} 
-                           />
-                         
-                           {/* Process Miss */}
-                           <DetailItem 
-                             label="Process Miss" 
-                             value={selectedCheck.process_miss === "1" ? "Yes" : "No"} 
-                           />
-                         
-                           {/* Technical Miss */}
-                           <DetailItem 
-                             label="Technical Miss" 
-                             value={selectedCheck.technical_miss === "1" ? "Yes" : "No"} 
-                           />
-                         
-                           {/* Corrective Measure */}
-                           <DetailItem 
-                             label="Corrective Measure" 
-                             value={selectedCheck.corrective || 'Not specified'} 
-                           />
-                         </View>
+                  {/* FAIL VIEW */}
+                  <View style={styles.failView}>
+                    {/* Breadcrumb */}
+                    <View style={styles.breadcrumb}>
+                      <Text style={styles.breadcrumbItem}>Checks</Text>
+                      <Feather name="chevron-right" size={16} color="#8E8E93" />
+                      <Text style={[styles.breadcrumbItem, styles.breadcrumbActive]}>
+                        Failure Details
+                      </Text>
+                    </View>
 
-                     
-                         {/* Image Card */}
-                         <View style={styles.imageCard}>
-                           {selectedCheck.image_url ? (
-                             <Image
-                               source={{ uri: selectedCheck.image_url }}
-                               style={{ width: "100%", height: 200, borderRadius: 16 }}
-                               resizeMode="cover"
-                             />
-                             ) : (
-                               <View style={styles.imageContainer}>
-                                 <Feather name="camera" size={40} color="#8E8E93" />
-                                 <Text style={styles.imageTitle}>Evidence Photo</Text>
-                                 <Text style={styles.imageSubtitle}>Tap to view full image</Text>
-                               </View>
-                             )}
-                           </View>
-                         </View>
-                        )}
+                    {/* Status Header */}
+                    <LinearGradient
+                      colors={['#FF3B30', '#FF2D21']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.failHeader}
+                    >
+                      <Feather name="x-circle" size={32} color="#FFFFFF" />
+                      <Text style={styles.failHeaderText}>FAILED</Text>
+                    </LinearGradient>
+
+                    {/* Check Name */}
+                    <Text style={styles.failCheckName}>{selectedCheck.check_name}</Text>
+
+                    {/* Details */}
+                    <View style={styles.detailsCard}>
+                      <Text style={styles.detailsTitle}>Failure Details</Text>
+                      <DetailItem label="Path" value={selectedCheck.breadcrumb || 'Not specified'} />
+                      <DetailItem label="Reason" value={selectedCheck.reason || 'Not specified'} />
+                      <DetailItem label="Process Miss" value={selectedCheck.process_miss === "1" ? "Yes" : "No"} />
+                      <DetailItem label="Technical Miss" value={selectedCheck.technical_miss === "1" ? "Yes" : "No"} />
+                      <DetailItem label="Corrective Measure" value={selectedCheck.corrective || 'Not specified'} />
+                    </View>
+
+                    {/* Image */}
+                    <View style={styles.imageCard}>
+                      {selectedCheck.image_url ? (
+                        <Image
+                          source={{ uri: selectedCheck.image_url }}
+                          style={{ width: "100%", height: 200, borderRadius: 16 }}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.imageContainer}>
+                          <Feather name="camera" size={40} color="#8E8E93" />
+                          <Text style={styles.imageTitle}>Evidence Photo</Text>
+                          <Text style={styles.imageSubtitle}>Tap to view full image</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
                 </ScrollView>
               </View>
             </Animated.View>
@@ -370,6 +257,7 @@ const DetailItem = ({ label, value }: { label: string; value: string }) => (
   </View>
 );
 
+// ✅ reuse same styles as completed.tsx
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -746,7 +634,7 @@ const styles = StyleSheet.create({
   },
   blurBox: {
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 100,
     alignItems: "center",
     justifyContent: "center",
   },

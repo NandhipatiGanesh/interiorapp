@@ -136,7 +136,7 @@ export default function AuthScreen() {
         style={styles.container}
       >
         <Image
-          source={require("../../assets/images/herobanner.png")}
+          source={require("../../assets/images/binyaminmellish.jpg")}
           style={styles.banner}
         />
         <Text style={styles.title}>{isSignup ? "Sign Up" : "Login"}</Text>

@@ -12,7 +12,7 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -31,9 +31,7 @@ export default function CustomDrawer() {
 
   // drawer always mounts, just slides in/out
   return (
-    <SafeAreaView  style={styles.overlay} edges={["top", ]} // cover all sides
-    pointerEvents={isOpen ? "auto" : "none"}
->
+   
     <View style={styles.overlay} pointerEvents={isOpen ? "auto" : "none"}>
       {/* backdrop */}
       
@@ -90,7 +88,7 @@ export default function CustomDrawer() {
         </ScrollView>
       </Animated.View>
     </View>
-    </SafeAreaView>
+   
   );
 }
 
@@ -101,6 +99,7 @@ const styles = StyleSheet.create({
     flex: 1,
     zIndex: 1000,
     width: '100%',
+    paddingTop: 30, 
   },
   backdrop: {
     flex: 1,
