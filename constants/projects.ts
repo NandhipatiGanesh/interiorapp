@@ -85,7 +85,293 @@ export const projects: Project[] = [
     title: "Ganesh Adobe",
     description: "Residential Project",
     checks: [
-      makeCheck("1", 0, "Drawings"),
+    makeCheck("1", 0, "Drawings", [
+
+  // 🧭 Preliminary Survey
+  makeCheck("1_0", 0, "Preliminary Survey", [
+    makeCheck("1_0_0", 0, "Basic", [
+      makeCheck("1_0_0_0", 0, "Drawing Title"),
+      makeCheck("1_0_0_0", 1, "Drawing Number"),
+      makeCheck("1_0_0_0", 2, "Revision Number/Date"),
+      makeCheck("1_0_0_0", 3, "Designated site name"),
+      makeCheck("1_0_0_0", 4, "Revisions & Date"),
+      makeCheck("1_0_0_0", 5, "Drawing Scale"),
+      makeCheck("1_0_0_0", 6, "Area statements"),
+      makeCheck("1_0_0_0", 7, "North Arrow shown and oriented?"),
+      makeCheck("1_0_0_0", 8, "Key Plan/Site Context included?"),
+      makeCheck("1_0_0_0", 9, "Legend & Symbols defined?"),
+      makeCheck("1_0_0_0", 10, "Proper Material specification provided?"),
+      makeCheck("1_0_0_0", 11, "Consistency with other drawings?")
+    ]),
+    makeCheck("1_0_1", 0, "Technical", [
+      makeCheck("1_0_1_0", 0, "Permanent Benchmark (BM) established and coordinates recorded?"),
+      makeCheck("1_0_1_0", 1, "Temporary Benchmarks (TBMs) set up?"),
+      makeCheck("1_0_1_0", 2, "All site boundary corners measured and recorded?"),
+      makeCheck("1_0_1_0", 3, "Boundary measurements checked against legal plot plan?"),
+      makeCheck("1_0_1_0", 4, "Encroachments from adjacent properties noted?"),
+      makeCheck("1_0_1_0", 5, "Existing FGL spot levels taken across site?"),
+      makeCheck("1_0_1_0", 6, "High and low points recorded?"),
+      makeCheck("1_0_1_0", 7, "Proposed FFL referenced to BM?"),
+      makeCheck("1_0_1_0", 8, "Location/elevation of existing utilities recorded?"),
+      makeCheck("1_0_1_0", 9, "Adjacent structures and offsets recorded?"),
+      makeCheck("1_0_1_0", 10, "Major trees, rock outcrops, foundations located?"),
+      makeCheck("1_0_1_0", 11, "Raw data downloaded and backed up?"),
+      makeCheck("1_0_1_0", 12, "North arrow orientation recorded?"),
+      makeCheck("1_0_1_0", 13, "Preliminary site sketch prepared?"),
+      makeCheck("1_0_1_0", 14, "Nearest drainage manhole details recorded?"),
+      makeCheck("1_0_1_0", 15, "Nearest municipal water supply point recorded?"),
+      makeCheck("1_0_1_0", 16, "Bore points in the plot recorded?"),
+      makeCheck("1_0_1_0", 17, "Electrical pole details recorded?")
+    ])
+  ]),
+
+  // 🧪 Soil Test Report
+  makeCheck("1_1", 0, "Soil Test Report", [
+    makeCheck("1_1_0", 0, "Basic", [
+      makeCheck("1_1_0_0", 0, "Drawing Title"),
+      makeCheck("1_1_0_0", 1, "Drawing Number"),
+      makeCheck("1_1_0_0", 2, "Revision Number/Date"),
+      makeCheck("1_1_0_0", 3, "Designated site name"),
+      makeCheck("1_1_0_0", 4, "Revisions & Date"),
+      makeCheck("1_1_0_0", 5, "Drawing Scale"),
+      makeCheck("1_1_0_0", 6, "Area statements"),
+      makeCheck("1_1_0_0", 7, "North Arrow shown and oriented?"),
+      makeCheck("1_1_0_0", 8, "Key Plan/Site Context included?"),
+      makeCheck("1_1_0_0", 9, "Legend & Symbols defined?"),
+      makeCheck("1_1_0_0", 10, "Proper Material specification provided?"),
+      makeCheck("1_1_0_0", 11, "Consistency with other drawings?")
+    ]),
+    makeCheck("1_1_1", 0, "Technical", [
+      makeCheck("1_1_1_0", 0, "Project name/location matches site details?"),
+      makeCheck("1_1_1_0", 1, "Report date recent and relevant?"),
+      makeCheck("1_1_1_0", 2, "Scope covers entire footprint?"),
+      makeCheck("1_1_1_0", 3, "Borehole/Trial Pit locations mapped?"),
+      makeCheck("1_1_1_0", 4, "Number and depth of boreholes adequate?"),
+      makeCheck("1_1_1_0", 5, "Groundwater table level recorded?"),
+      makeCheck("1_1_1_0", 6, "Soil strata and layer thickness described?"),
+      makeCheck("1_1_1_0", 7, "Soil classification provided?"),
+      makeCheck("1_1_1_0", 8, "Lab test results included?"),
+      makeCheck("1_1_1_0", 9, "Foundation type recommended?"),
+      makeCheck("1_1_1_0", 10, "SBC or net allowable pressure stated?"),
+      makeCheck("1_1_1_0", 11, "Minimum foundation depth specified?"),
+      makeCheck("1_1_1_0", 12, "Settlement estimates provided?"),
+      makeCheck("1_1_1_0", 13, "Seismic parameters recommended?"),
+      makeCheck("1_1_1_0", 14, "Excavation/shoring recommendations provided?"),
+      makeCheck("1_1_1_0", 15, "Special soil treatment noted?"),
+      makeCheck("1_1_1_0", 16, "Specialized backfill recommendations included?"),
+      makeCheck("1_1_1_0", 17, "Report shared with structural engineer?")
+    ])
+  ]),
+
+  // 📐 Floor Plans
+  makeCheck("1_2", 0, "Floor Plans", [
+    makeCheck("1_2_0", 0, "Basic", [
+      makeCheck("1_2_0_0", 0, "Drawing Title"),
+      makeCheck("1_2_0_0", 1, "Drawing Number"),
+      makeCheck("1_2_0_0", 2, "Revision Number/Date"),
+      makeCheck("1_2_0_0", 3, "Designated site name"),
+      makeCheck("1_2_0_0", 4, "Revisions & Date"),
+      makeCheck("1_2_0_0", 5, "Drawing Scale"),
+      makeCheck("1_2_0_0", 6, "Area statements"),
+      makeCheck("1_2_0_0", 7, "North Arrow shown and oriented?"),
+      makeCheck("1_2_0_0", 8, "Key Plan/Site Context included?"),
+      makeCheck("1_2_0_0", 9, "Legend & Symbols defined?"),
+      makeCheck("1_2_0_0", 10, "Proper Material specification provided?"),
+      makeCheck("1_2_0_0", 11, "Consistency with other drawings?")
+    ]),
+    makeCheck("1_2_1", 0, "Technical", [
+      makeCheck("1_2_1_0", 0, "Levels based on client/site requirements?"),
+      makeCheck("1_2_1_0", 1, "Exterior wall thickness 9\"?"),
+      makeCheck("1_2_1_0", 2, "Internal wall thickness 4\" specified?"),
+      makeCheck("1_2_1_0", 3, "Beam and slab layout coordinated?"),
+      makeCheck("1_2_1_0", 4, "Door/window dimensions correct?"),
+      makeCheck("1_2_1_0", 5, "Floor levels specified?"),
+      makeCheck("1_2_1_0", 6, "All room levels mentioned?"),
+      makeCheck("1_2_1_0", 7, "Sill and lintel levels indicated?"),
+      makeCheck("1_2_1_0", 8, "Room names & dimensions shown?"),
+      makeCheck("1_2_1_0", 9, "Ceiling heights noted?"),
+      makeCheck("1_2_1_0", 10, "Staircase details provided?")
+    ])
+  ]),
+
+  // 🧱 Brick Work
+  makeCheck("1_3", 0, "Brick Work", [
+    makeCheck("1_3_0", 0, "Basic", [
+      makeCheck("1_3_0_0", 0, "Drawing Title"),
+      makeCheck("1_3_0_0", 1, "Drawing Number"),
+      makeCheck("1_3_0_0", 2, "Revision Number/Date"),
+      makeCheck("1_3_0_0", 3, "Designated site name"),
+      makeCheck("1_3_0_0", 4, "Revisions & Date"),
+      makeCheck("1_3_0_0", 5, "Drawing Scale"),
+      makeCheck("1_3_0_0", 6, "Area statements"),
+      makeCheck("1_3_0_0", 7, "North Arrow shown and oriented?"),
+      makeCheck("1_3_0_0", 8, "Key Plan/Site Context included?"),
+      makeCheck("1_3_0_0", 9, "Legend & Symbols defined?"),
+      makeCheck("1_3_0_0", 10, "Proper Material specification provided?"),
+      makeCheck("1_3_0_0", 11, "Consistency with other drawings?")
+    ]),
+    makeCheck("1_3_1", 0, "Technical", [
+      makeCheck("1_3_1_0", 0, "Brick type specified?"),
+      makeCheck("1_3_1_0", 1, "Mortar mix ratio specified?"),
+      makeCheck("1_3_1_0", 2, "Joint thickness and finish detailed?"),
+      makeCheck("1_3_1_0", 3, "Curing requirements noted?"),
+      makeCheck("1_3_1_0", 4, "Setting-out plan provided?"),
+      makeCheck("1_3_1_0", 5, "Bond pattern specified?"),
+      makeCheck("1_3_1_0", 6, "Wall thickness noted?"),
+      makeCheck("1_3_1_0", 7, "Dimensions based on brick module?"),
+      makeCheck("1_3_1_0", 8, "Lintel details provided?"),
+      makeCheck("1_3_1_0", 9, "DPC location/material specified?"),
+      makeCheck("1_3_1_0", 10, "Wall tie details provided?"),
+      makeCheck("1_3_1_0", 11, "Expansion joints shown?"),
+      makeCheck("1_3_1_0", 12, "RCC band details included?"),
+      makeCheck("1_3_1_0", 13, "Embedded items included?"),
+      makeCheck("1_3_1_0", 14, "Parapet/coping details provided?"),
+      makeCheck("1_3_1_0", 15, "Raking/toothing details provided?"),
+      makeCheck("1_3_1_0", 16, "Plastering mix ratio specified?"),
+      makeCheck("1_3_1_0", 17, "Chicken mesh mix ratio provided?"),
+      makeCheck("1_3_1_0", 18, "Elevation plaster grooves detailed?"),
+      makeCheck("1_3_1_0", 19, "Elevation additional items detailed?")
+    ])
+  ]),
+
+  // 💡 Electrical
+  makeCheck("1_4", 0, "Electrical", [
+    makeCheck("1_4_0", 0, "Basic", [
+      makeCheck("1_4_0_0", 0, "Drawing Title"),
+      makeCheck("1_4_0_0", 1, "Drawing Number"),
+      makeCheck("1_4_0_0", 2, "Revision Number/Date"),
+      makeCheck("1_4_0_0", 3, "Designated site name"),
+      makeCheck("1_4_0_0", 4, "Revisions & Date"),
+      makeCheck("1_4_0_0", 5, "Drawing Scale"),
+      makeCheck("1_4_0_0", 6, "Area statements"),
+      makeCheck("1_4_0_0", 7, "North Arrow shown?"),
+      makeCheck("1_4_0_0", 8, "Key Plan included?"),
+      makeCheck("1_4_0_0", 9, "Legend & Symbols defined?"),
+      makeCheck("1_4_0_0", 10, "Material specification provided?"),
+      makeCheck("1_4_0_0", 11, "Consistency with other drawings?")
+    ]),
+    makeCheck("1_4_1", 0, "Technical", [
+      makeCheck("1_4_1_0", 0, "All light fixtures and switches located and numbered?"),
+      makeCheck("1_4_1_0", 1, "Power outlets correctly shown?"),
+      makeCheck("1_4_1_0", 2, "Circuits identified and home run shown?"),
+      makeCheck("1_4_1_0", 3, "Lighting fixtures scheduled with wattage, type, height?"),
+      makeCheck("1_4_1_0", 4, "Load balancing considered?"),
+      makeCheck("1_4_1_0", 5, "Panel schedules complete?"),
+      makeCheck("1_4_1_0", 6, "Single-line diagram included?"),
+      makeCheck("1_4_1_0", 7, "Voltage, phase, ampacity specified?"),
+      makeCheck("1_4_1_0", 8, "Fire alarm devices shown?"),
+      makeCheck("1_4_1_0", 9, "Data/telephone/AV outlets shown?"),
+      makeCheck("1_4_1_0", 10, "Electrical coordinated with other plans?"),
+      makeCheck("1_4_1_0", 11, "Conduit routing and bend radii provided?"),
+      makeCheck("1_4_1_0", 12, "Motor connections and protection detailed?"),
+      makeCheck("1_4_1_0", 13, "Emergency/exit lighting with backup shown?")
+    ])
+  ]),
+
+  // 🚰 Plumbing
+  makeCheck("1_5", 0, "Plumbing", [
+    makeCheck("1_5_0", 0, "Basic", [
+      makeCheck("1_5_0_0", 0, "Drawing Title"),
+      makeCheck("1_5_0_0", 1, "Drawing Number"),
+      makeCheck("1_5_0_0", 2, "Revision Number/Date"),
+      makeCheck("1_5_0_0", 3, "Designated site name"),
+      makeCheck("1_5_0_0", 4, "Revisions & Date"),
+      makeCheck("1_5_0_0", 5, "Drawing Scale"),
+      makeCheck("1_5_0_0", 6, "Area statements"),
+      makeCheck("1_5_0_0", 7, "North Arrow shown?"),
+      makeCheck("1_5_0_0", 8, "Key Plan included?"),
+      makeCheck("1_5_0_0", 9, "Legend & Symbols defined?"),
+      makeCheck("1_5_0_0", 10, "Material specification provided?"),
+      makeCheck("1_5_0_0", 11, "Consistency with other drawings?")
+    ]),
+    makeCheck("1_5_1", 0, "Technical", [
+      makeCheck("1_5_1_0", 0, "Drawing legend and abbreviations included?"),
+      makeCheck("1_5_1_0", 1, "Project specifications referenced?"),
+      makeCheck("1_5_1_0", 2, "Location of main water supply shown?"),
+      makeCheck("1_5_1_0", 3, "Cold/hot water lines sized and routed?"),
+      makeCheck("1_5_1_0", 4, "Water heater and pump details specified?"),
+      makeCheck("1_5_1_0", 5, "All fixtures shown with connections?"),
+      makeCheck("1_5_1_0", 6, "Waste and drain lines sized/routed?"),
+      makeCheck("1_5_1_0", 7, "Vent piping shown and sized?"),
+      makeCheck("1_5_1_0", 8, "Floor drains, cleanouts, traps specified?"),
+      makeCheck("1_5_1_0", 9, "Riser diagrams included?"),
+      makeCheck("1_5_1_0", 10, "Roof/balcony drains sized?"),
+      makeCheck("1_5_1_0", 11, "Stormwater drain lines routed?"),
+      makeCheck("1_5_1_0", 12, "Plumbing coordinated with other plans?"),
+      makeCheck("1_5_1_0", 13, "Designs comply with codes?"),
+      makeCheck("1_5_1_0", 14, "Pipe supports shown?"),
+      makeCheck("1_5_1_0", 15, "Insulation requirements provided?"),
+      makeCheck("1_5_1_0", 16, "Pressure testing/flushing details included?")
+    ])
+  ]),
+
+  // 🪵 Flooring
+  makeCheck("1_6", 0, "Flooring", [
+    makeCheck("1_6_0", 0, "Basic", [
+      makeCheck("1_6_0_0", 0, "Drawing Title"),
+      makeCheck("1_6_0_0", 1, "Drawing Number"),
+      makeCheck("1_6_0_0", 2, "Revision Number/Date"),
+      makeCheck("1_6_0_0", 3, "Designated site name"),
+      makeCheck("1_6_0_0", 4, "Revisions & Date"),
+      makeCheck("1_6_0_0", 5, "Drawing Scale"),
+      makeCheck("1_6_0_0", 6, "Area statements"),
+      makeCheck("1_6_0_0", 7, "North Arrow shown?"),
+      makeCheck("1_6_0_0", 8, "Key Plan included?"),
+      makeCheck("1_6_0_0", 9, "Legend & Symbols defined?"),
+      makeCheck("1_6_0_0", 10, "Material specification provided?"),
+      makeCheck("1_6_0_0", 11, "Consistency with other drawings?")
+    ]),
+    makeCheck("1_6_1", 0, "Technical", [
+      makeCheck("1_6_1_0", 0, "Legend and symbols included?"),
+      makeCheck("1_6_1_0", 1, "Flooring material specified?"),
+      makeCheck("1_6_1_0", 2, "Pattern/direction indicated?"),
+      makeCheck("1_6_1_0", 3, "Details of borders/inlays shown?"),
+      makeCheck("1_6_1_0", 4, "Dimensions from walls/datum provided?"),
+      makeCheck("1_6_1_0", 5, "Joint type and width specified?"),
+      makeCheck("1_6_1_0", 6, "Height and level noted?"),
+      makeCheck("1_6_1_0", 7, "Transition strip details shown?"),
+      makeCheck("1_6_1_0", 8, "Coordinated with architectural plans?"),
+      makeCheck("1_6_1_0", 9, "Drains/cleanouts coordinated?"),
+      makeCheck("1_6_1_0", 10, "Electrical floor outlets accounted?"),
+      makeCheck("1_6_1_0", 11, "Subfloor prep notes included?"),
+      makeCheck("1_6_1_0", 12, "Curing/setting time specified?")
+    ])
+  ]),
+
+  // 🎨 Painting
+  makeCheck("1_7", 0, "Painting", [
+    makeCheck("1_7_0", 0, "Basic", [
+      makeCheck("1_7_0_0", 0, "Drawing Title"),
+      makeCheck("1_7_0_0", 1, "Drawing Number"),
+      makeCheck("1_7_0_0", 2, "Revision Number/Date"),
+      makeCheck("1_7_0_0", 3, "Designated site name"),
+      makeCheck("1_7_0_0", 4, "Revisions & Date"),
+      makeCheck("1_7_0_0", 5, "Drawing Scale"),
+      makeCheck("1_7_0_0", 6, "Area statements"),
+      makeCheck("1_7_0_0", 7, "North Arrow shown?"),
+      makeCheck("1_7_0_0", 8, "Key Plan included?"),
+      makeCheck("1_7_0_0", 9, "Legend & Symbols defined?"),
+      makeCheck("1_7_0_0", 10, "Material specification provided?"),
+      makeCheck("1_7_0_0", 11, "Consistency with other drawings?")
+    ]),
+    makeCheck("1_7_1", 0, "Technical", [
+      makeCheck("1_7_1_0", 0, "Legend for colors, finishes, codes included?"),
+      makeCheck("1_7_1_0", 1, "Paint type, brand, code specified?"),
+      makeCheck("1_7_1_0", 2, "Number of coats and curing time noted?"),
+      makeCheck("1_7_1_0", 3, "Specific finishes indicated?"),
+      makeCheck("1_7_1_0", 4, "Surface prep instructions provided?"),
+      makeCheck("1_7_1_0", 5, "Defect repair details included?"),
+      makeCheck("1_7_1_0", 6, "Color schedule provided?"),
+      makeCheck("1_7_1_0", 7, "All surfaces zoned with color codes?"),
+      makeCheck("1_7_1_0", 8, "Painting coordinated with plans?"),
+      makeCheck("1_7_1_0", 9, "Painted/unpainted surface specs included?"),
+      makeCheck("1_7_1_0", 10, "Adjacent surface protection noted?"),
+      makeCheck("1_7_1_0", 11, "Safety and ventilation notes included?")
+    ])
+  ])
+
+]),
+      
       makeCheck("1", 1, "Sub Structure", [
         makeCheck("1_1", 0, "Setting out", [
           makeCheck("1_1_0", 0, "Accuracy and Layout", [
