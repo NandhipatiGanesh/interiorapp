@@ -30,7 +30,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Alert, Animated,
   Dimensions, Image, Modal,
@@ -70,12 +70,22 @@ export default function ProjectDetail() {
   const [technicalMiss, setTechnicalMiss] = useState(false);
   const [correctiveMeasures, setCorrectiveMeasures] = useState('');
   const [showCorrectiveField, setShowCorrectiveField] = useState(false);
+  // Local UI state for uploads & submission
   const [uploadedImageUri, setUploadedImageUri] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
 
-  useEffect(() => {
+  // Helper: convert URI to Blob (used on web)
+  async function uriToBlob(uri: string): Promise<Blob> {
+    const response = await fetch(uri);
+    return await response.blob();
+  }
+
+  // Upload endpoint
+  const WP_UPLOAD_URL = "https://elementortemplates.in/wp-json/myapp/v1/upload-image";
+
+  React.useEffect(() => {
     if (project) {
       setPath([project]); // reset to root
     }
@@ -88,14 +98,6 @@ export default function ProjectDetail() {
       </View>
     );
   }
-  // Convert URI → Blob for Web
-async function uriToBlob(uri: string): Promise<Blob> {
-  const response = await fetch(uri);
-  return await response.blob();
-}
-
-const WP_UPLOAD_URL = "https://elementortemplates.in/wp-json/myapp/v1/upload-image";
-
  const uploadImage = async (projectId: string, checkId: string, userId: string) => {
   try {
     // 1. Pick image
@@ -401,32 +403,11 @@ const submitProjectCheck = async (
       console.log("✅ Check marked as completed:", currentCheck.id, "Success:", added);
     }
 
-    // 2. Send email for individual check
-    const subject = `Quality Check - ${currentCheck.label} (${status.toUpperCase()}) | ${now}`;
-    const html = `
-      <h2>${breadcrumb}</h2>
-      <p><strong>Status:</strong> ${status.toUpperCase()}</p>
-      ${uploadedImageUri ? `<p><img src="${uploadedImageUri}" style="max-width:100%"/></p>` : ""}
-      ${
-        status === "fail"
-          ? `<h3>Failure Details</h3>
-             <p><strong>Reason:</strong> ${formData?.reasonForFailure ?? "N/A"}</p>
-             <p><strong>Process Miss:</strong> ${formData?.processMiss ? "Yes" : "No"}</p>
-             <p><strong>Technical Miss:</strong> ${formData?.technicalMiss ? "Yes" : "No"}</p>
-             <p><strong>Corrective Measure:</strong> ${formData?.correctiveMeasure ?? "N/A"}</p>`
-          : `<h3>Result</h3><p>This quality check is done ✅</p>`
-      }
-    `;
-
-    const mailRes = await fetch("https://sendemailapi-seven.vercel.app/api/send-completion-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "ganeshwebby@gmail.com", subject, html }),
-    });
-
-    if (!mailRes.ok) throw new Error("Email failed");
-
-    console.log("✅ Individual check email sent");
+    // NOTE: Removed per-check email sending to avoid sending an email for every
+    // individual check update. Instead we rely on `checkAndNotifyMainCheckCompletion`
+    // to send a consolidated email when the parent/main check (section) is fully
+    // completed by the user. The DB save above is retained.
+    console.log("✅ Check saved to DB; per-check email skipped (will notify on main completion)");
 
     // ✨✨✨ NEW CODE: Check if main check is complete ✨✨✨
     console.log("🔍 Checking if main check is complete...");

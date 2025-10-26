@@ -1645,24 +1645,6 @@ export const projects: Project[] = [
        ])
 
       ]),
-      
-      makeCheck("1", 97, " NESTED TEST", [
-        makeCheck("1_97", 0, "Category", [
-          makeCheck("1_97_0", 0, "SubCategory", [
-            makeCheck("1_97_0_0", 0, "Photo 1"),
-           
-          ])
-        ])
-      ]),
-       makeCheck("1", 8, " TEST CHECK", [
-        makeCheck("1_8", 0, "Photo Tests", [
-          makeCheck("1_8_0", 0, "Basic Photos", [
-            makeCheck("1_8_0_0", 0, "Test Photo 1"),
-            makeCheck("1_8_0_1", 1, "Test Photo 2"),
-            makeCheck("1_8_0_2", 2, "Test Photo 3")
-          ])
-        ])
-      ]),
     ],
     createdAt: new Date().toISOString(),
   },
@@ -1898,7 +1880,7 @@ export const notifyMainCheckCompletion = async (
   }
 
   const now = new Date().toLocaleString();
-  const subject = `🎉 Main Check Completed: ${mainCheck.label} - ${project.title}`;
+  const subject = `${mainCheck.label} - Main Check Completed | ${project.title}`;
   // Get all sub-checks with their status
   type CheckReport = {
     name: string;
@@ -2042,7 +2024,7 @@ export const notifyMainCheckCompletion = async (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
-        email: "ganeshwebby@gmail.com", 
+        email: "rathlavath.raghavendra@gmail.com", 
         subject, 
         html 
       }),

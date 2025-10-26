@@ -137,7 +137,7 @@ export default function DLRScreen() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email: "ganeshwebby@gmail.com", // 📤 change this to your target email
+            email: "rathlavath.raghavendra@gmail.com", // 📤 change this to your target email
             subject,
             html,
           }),
